@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hospital Queue System</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#f4f6f8;
+    margin:0;
+    padding:20px;
+}
+.container{
+    max-width:750px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+h2{text-align:center;}
+
+select, input, button{
+    width:100%;
+    padding:10px;
+    margin:8px 0;
+    border-radius:6px;
+    border:1px solid #ccc;
+}
+
+button{
+    background:#2b7cff;
+    color:white;
+    cursor:pointer;
+    border:none;
+}
+button:hover{background:#1a5fd1;}
+
+.section{
+    margin-top:20px;
+    padding:15px;
+    border-radius:8px;
+    background:#f7f9ff;
+}
+
+.queue-box{
+    background:#eef3ff;
+    padding:10px;
+    border-radius:6px;
+    margin-top:10px;
+}
+
+.receipt{
+    margin-top:15px;
+    padding:15px;
+    background:#eaffea;
+    border:1px solid #b2f5b2;
+    border-radius:8px;
+    display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h2>Hospital Queue System</h2>
+
+<input type="text" id="name" placeholder="Patient Name">
+
+<select id="hospital" onchange="loadDepartments()">
+    <option value="">Select Hospital</option>
+    <option value="City Hospital">City Hospital</option>
+    <option value="Life Care">Life Care</option>
+    <option value="Apollo Clinic">Apollo Clinic</option>
+</select>
+
+<select id="department" onchange="showQueue()">
+    <option value="">Select Department</option>
+</select>
+
+<button onclick="viewQueue()">View Queue</button>
+
+<div class="queue-box" id="queueBox">
+Select hospital & department to view queue
+</div>
+
+<button onclick="bookAppointment()">Book Appointment</button>
+
+<div class="receipt" id="receipt"></div>
+
+<hr>
+
+<h3>Cancel Appointment</h3>
+
+<select id="cHospital" onchange="loadCancelDept()">
+    <option value="">Select Hospital</option>
+</select>
+
+<select id="cDept" onchange="loadTokens()">
+    <option value="">Select Department</option>
+</select>
+
+<select id="cToken">
+    <option value="">Select Token</option>
+</select>
+
+<button onclick="cancelAppointment()">Cancel Appointment</button>
+
+</div>
+
+<script>
+
+const data = {
+    "City Hospital": {
+        "General": [
+            {name:"Rahul", token:"CH-GE-1"},
+            {name:"Meena", token:"CH-GE-2"}
+        ],
+        "ENT": [
+            {name:"Aman", token:"CH-EN-1"}
+        ],
+        "Cardiology": []
+    },
+    "Life Care": {
+        "General": [
+            {name:"Riya", token:"LC-GE-1"}
+        ],
+        "Dermatology": [],
+        "Orthopedic": []
+    },
+    "Apollo Clinic": {
+        "General": [],
+        "Neurology": [
+            {name:"Karan", token:"AC-NE-1"}
+        ],
+        "Pediatrics": []
+    }
+};
+
+// Load departments
+function loadDepartments(){
+    let h = document.getElementById("hospital").value;
+    let dept = document.getElementById("department");
+
+    dept.innerHTML = '<option value="">Select Department</option>';
+
+    if(h){
+        Object.keys(data[h]).forEach(d=>{
+            let opt = document.createElement("option");
+            opt.value = d;
+            opt.innerText = d;
+            dept.appendChild(opt);
+        });
+
+        // also update cancel hospital list
+        updateCancelHospitals();
+    }
+}
+
+// Show queue preview
+function viewQueue(){
+    let h = document.getElementById("hospital").value;
+    let d = document.getElementById("department").value;
+
+    if(!h || !d){
+        document.getElementById("queueBox").innerText = "Select hospital & department";
+        return;
+    }
+
+    let queue = data[h][d];
+    let text = `Queue (${queue.length} patients):\n\n`;
+
+    queue.forEach((p,i)=>{
+        text += `${i+1}. ${p.name} (${p.token})\n`;
+    });
+
+    document.getElementById("queueBox").innerText = text;
+}
+
+// Generate token
+function generateToken(h,d){
+    return h.slice(0,2).toUpperCase()+"-"+d.slice(0,2).toUpperCase()+"-"+(data[h][d].length+1);
+}
+
+// Book appointment
+function bookAppointment(){
+    let name = document.getElementById("name").value;
+    let h = document.getElementById("hospital").value;
+    let d = document.getElementById("department").value;
+
+    if(!name || !h || !d){
+        alert("Fill all fields");
+        return;
+    }
+
+    let token = generateToken(h,d);
+    data[h][d].push({name, token});
+
+    let pos = data[h][d].length;
+    let wait = pos * 10;
+
+    let time = new Date();
+    time.setMinutes(time.getMinutes() + wait);
+
+    document.getElementById("receipt").style.display = "block";
+    document.getElementById("receipt").innerHTML = `
+        <h3>Receipt</h3>
+        <p><b>Name:</b> ${name}</p>
+        <p><b>Hospital:</b> ${h}</p>
+        <p><b>Department:</b> ${d}</p>
+        <p><b>Token:</b> ${token}</p>
+        <p><b>Time:</b> ${time.toLocaleTimeString()}</p>
+    `;
+
+    updateCancelHospitals();
+}
+
+// Cancel section loaders
+function updateCancelHospitals(){
+    let sel = document.getElementById("cHospital");
+    sel.innerHTML = '<option value="">Select Hospital</option>';
+
+    Object.keys(data).forEach(h=>{
+        let opt = document.createElement("option");
+        opt.value = h;
+        opt.innerText = h;
+        sel.appendChild(opt);
+    });
+}
+
+function loadCancelDept(){
+    let h = document.getElementById("cHospital").value;
+    let d = document.getElementById("cDept");
+
+    d.innerHTML = '<option value="">Select Department</option>';
+
+    if(h){
+        Object.keys(data[h]).forEach(dep=>{
+            let opt = document.createElement("option");
+            opt.value = dep;
+            opt.innerText = dep;
+            d.appendChild(opt);
+        });
+    }
+}
+
+function loadTokens(){
+    let h = document.getElementById("cHospital").value;
+    let d = document.getElementById("cDept").value;
+    let t = document.getElementById("cToken");
+
+    t.innerHTML = '<option value="">Select Token</option>';
+
+    if(h && d){
+        data[h][d].forEach(p=>{
+            let opt = document.createElement("option");
+            opt.value = p.token;
+            opt.innerText = p.token + " - " + p.name;
+            t.appendChild(opt);
+        });
+    }
+}
+
+// Cancel appointment
+function cancelAppointment(){
+    let h = document.getElementById("cHospital").value;
+    let d = document.getElementById("cDept").value;
+    let t = document.getElementById("cToken").value;
+
+    if(!h || !d || !t){
+        alert("Select all fields");
+        return;
+    }
+
+    let idx = data[h][d].findIndex(p => p.token === t);
+
+    if(idx !== -1){
+        data[h][d].splice(idx,1);
+        alert("Appointment cancelled");
+    } else {
+        alert("Token not found");
+    }
+}
+
+</script>
+
+</body>
+</html>
