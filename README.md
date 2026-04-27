@@ -40,4 +40,5 @@ It allows users to book appointments, view live queue status, and cancel booking
 
 ---
 
-## Project Structure
+## Project purposes only
+
